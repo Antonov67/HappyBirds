@@ -8,7 +8,10 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.CountDownTimer;
+import android.view.MotionEvent;
 import android.view.View;
+
+import java.util.Timer;
 
 public class GameView extends View {
 
@@ -59,14 +62,27 @@ public class GameView extends View {
             }
         }
 
-
-
-
         Timer timer = new Timer();
         timer.start();
+    }
 
+    //обработаем нажатие на экран
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
 
+        int eventAction = event.getAction();
 
+        if (eventAction == MotionEvent.ACTION_DOWN) {
+            //поднимем птичку вверх
+            if (event.getY() < playerBird.getBoundingBoxRect().top) {
+                playerBird.setVelocityY(-100);
+                points--;
+            } else if (event.getY() > playerBird.getBoundingBoxRect().bottom) {
+                playerBird.setVelocityY(100);
+                points--;
+            }
+        }
+        return super.onTouchEvent(event);
     }
 
     @Override
@@ -92,9 +108,41 @@ public class GameView extends View {
         enemyBird.draw(canvas);
     }
 
+    //возвращение врага после пролета
+    private void teleportEnemy(){
+        enemyBird.setX(viewWidth + Math.random()*500);
+        enemyBird.setY(Math.random() * (viewHeight - enemyBird.getFrameHeight()));
+    }
+
+
+
+
     protected void update(){
         playerBird.update(timerInterval);
         enemyBird.update(timerInterval);
+        if (enemyBird.getX() < - enemyBird.getFrameWidth()){
+            teleportEnemy();
+            points += 10;
+        }
+
+        //проверка столкновений
+        if (enemyBird.intersect(playerBird)){
+            teleportEnemy();
+            points -=40;
+        }
+
+        //если птичка касается края экрана, то она меняет направление движения
+        if (playerBird.getY() + playerBird.getFrameHeight() > viewHeight) {
+            playerBird.setY(viewHeight - playerBird.getFrameHeight());
+            playerBird.setVelocityY(-playerBird.getVelocityY());
+            points--;
+        }
+        else if (playerBird.getY() < 0) {
+            playerBird.setY(0);
+            playerBird.setVelocityY(-playerBird.getVelocityY());
+            points--;
+        }
+
         invalidate();
     }
 
